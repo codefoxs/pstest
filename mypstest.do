@@ -1,4 +1,4 @@
-*! version 4.2.3 06Jun2024 Modified by 公众号：凯恩斯学计量
+*! version 4.2.3 07Nov2025 Modified by 公众号：凯恩斯学计量
 *! version 4.2.2 25apr2017 E. Leuven, B. Sianesi
 cap program drop pstest
 program define pstest, rclass
@@ -750,9 +750,7 @@ end
 
 cap program drop psm2dta
 program define psm2dta
-    syntax anything
-    
-    matrix result_matrix = `anything'
+    matrix result_matrix = r(result_matrix)
     
     qui clear
     qui svmat result_matrix, names(col)
@@ -771,4 +769,48 @@ program define psm2dta
     dis as res "PSM table has been converted to dta."
 end
 
-
+cap program drop eb2dta
+program define eb2dta
+    if e(cmd) != "ebalance"{
+        dis as err "You should run ebalance before this command."
+        exit
+    }
+    
+    tokenize "`e(cmdline)'", parse(",")
+    gettoken treat control: 1
+    
+    local controlnum = wordcount("`control'")
+    
+    matrix preBal = e(preBal)
+    matrix postBal = e(postBal)
+    matrix define Bal = J(`=`controlnum'*2', 6, .)
+    matrix colnames Bal = Treat_mean Treat_variance Treat_skewness Control_mean Control_variance Control_skewness
+    
+    local rownames = ""
+    forvalues i = 1(1)`controlnum'{
+        local rownames = "`rownames' " + word("`control'", `i') + "_Before"
+        local rownames = "`rownames' " + word("`control'", `i') + "_After"
+        local k = `i' * 2 - 1
+        local kk = `k' + 1
+        forvalues j = 1(1)6{
+            matrix Bal[`k', `j'] = preBal[`i', `j']
+            matrix Bal[`kk', `j'] = postBal[`i', `j']
+        }
+    }
+    matrix rownames Bal = `rownames'
+    qui clear
+    qui svmat Bal, names(col)
+    local rownames: rowfull Bal
+    qui gen Variable = "", before(Treat_mean)
+    local i = 1
+    foreach name in `rownames'{
+        qui replace Variable = "`name'" if _n == `i'
+        local ++i
+    }
+    qui split Variable, gen(temp) parse("_")
+    drop Variable
+    order temp1 temp2
+    ren temp1 Variable
+    ren temp2 Treat_type
+    dis as res "Ebalance table has been converted to dta."
+end
