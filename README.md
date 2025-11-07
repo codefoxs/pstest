@@ -1,7 +1,7 @@
 # pstest
 A modified version for Stata command pstest.
 
-# Quick use
+# PSM
 
 ```Stata
 psmatch2 Treat X1 X2 X3, out(Y) n(1) cal(0.01) logit ate common ties
@@ -9,8 +9,15 @@ psmatch2 Treat X1 X2 X3, out(Y) n(1) cal(0.01) logit ate common ties
 run "mypstest.do" // download from my repository
 pstest X1 X2 X3, both graph
 
-preserve
-psm2dta r(result_matrix)
+psm2dta
 save "PSM table.dta", replace
-restore
+```
+
+# ebalance
+```Stata
+ebalance Treat X1 X2 X3 , tar(1)
+run "mypstest.do" // download from my repository
+
+eb2dta
+save "Ebalance table.dta", replace
 ```
